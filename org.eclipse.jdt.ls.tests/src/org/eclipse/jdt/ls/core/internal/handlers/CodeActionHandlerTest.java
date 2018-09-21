@@ -24,7 +24,9 @@ import org.eclipse.jdt.ls.core.internal.JDTUtils;
 import org.eclipse.jdt.ls.core.internal.JavaClientConnection;
 import org.eclipse.jdt.ls.core.internal.LanguageServerWorkingCopyOwner;
 import org.eclipse.jdt.ls.core.internal.WorkspaceHelper;
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
+import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
@@ -76,10 +78,11 @@ public class CodeActionHandlerTest extends AbstractCompilationUnitBasedTest {
 		final Range range = getRange(unit, "java.sql");
 		params.setRange(range);
 		params.setContext(new CodeActionContext(Arrays.asList(getDiagnostic(Integer.toString(IProblem.UnusedImport), range))));
-		List<? extends Command> commands = getCommands(params);
-		Assert.assertNotNull(commands);
-		Assert.assertEquals(2, commands.size());
-		Command c = commands.get(0);
+		List<? extends CodeAction> codeActions = getCodeActions(params);
+		Assert.assertNotNull(codeActions);
+		Assert.assertEquals(2, codeActions.size());
+		Assert.assertEquals(codeActions.get(0).getKind(), CodeActionKind.QuickFix);
+		Command c = codeActions.get(0).getCommand();
 		Assert.assertEquals(CodeActionHandler.COMMAND_ID_APPLY_EDIT, c.getCommand());
 	}
 
@@ -98,10 +101,11 @@ public class CodeActionHandlerTest extends AbstractCompilationUnitBasedTest {
 		final Range range = getRange(unit, "some str");
 		params.setRange(range);
 		params.setContext(new CodeActionContext(Arrays.asList(getDiagnostic(Integer.toString(IProblem.UnterminatedString), range))));
-		List<? extends Command> commands = getCommands(params);
-		Assert.assertNotNull(commands);
-		Assert.assertEquals(1, commands.size());
-		Command c = commands.get(0);
+		List<? extends CodeAction> codeActions = getCodeActions(params);
+		Assert.assertNotNull(codeActions);
+		Assert.assertEquals(1, codeActions.size());
+		Assert.assertEquals(codeActions.get(0).getKind(), CodeActionKind.QuickFix);
+		Command c = codeActions.get(0).getCommand();
 		Assert.assertEquals(CodeActionHandler.COMMAND_ID_APPLY_EDIT, c.getCommand());
 	}
 
@@ -120,9 +124,9 @@ public class CodeActionHandlerTest extends AbstractCompilationUnitBasedTest {
 			CodeActionContext context = new CodeActionContext();
 			context.setDiagnostics(Collections.emptyList());
 			params.setContext(context);
-			List<? extends Command> commands = getCommands(params);
-			Assert.assertNotNull(commands);
-			Assert.assertEquals(0, commands.size());
+			List<? extends CodeAction> codeActions = getCodeActions(params);
+			Assert.assertNotNull(codeActions);
+			Assert.assertEquals(0, codeActions.size());
 		} finally {
 			cu.discardWorkingCopy();
 		}
@@ -144,10 +148,11 @@ public class CodeActionHandlerTest extends AbstractCompilationUnitBasedTest {
 		final Range range = getRange(unit, ";");
 		params.setRange(range);
 		params.setContext(new CodeActionContext(Arrays.asList(getDiagnostic(Integer.toString(IProblem.SuperfluousSemicolon), range))));
-		List<? extends Command> commands = getCommands(params);
-		Assert.assertNotNull(commands);
-		Assert.assertEquals(1, commands.size());
-		Command c = commands.get(0);
+		List<? extends CodeAction> codeActions = getCodeActions(params);
+		Assert.assertNotNull(codeActions);
+		Assert.assertEquals(1, codeActions.size());
+		Assert.assertEquals(codeActions.get(0), CodeActionKind.QuickFix);
+		Command c = codeActions.get(0).getCommand();
 		Assert.assertEquals(CodeActionHandler.COMMAND_ID_APPLY_EDIT, c.getCommand());
 		Assert.assertNotNull(c.getArguments());
 		Assert.assertTrue(c.getArguments().get(0) instanceof WorkspaceEdit);
@@ -164,8 +169,8 @@ public class CodeActionHandlerTest extends AbstractCompilationUnitBasedTest {
 		return JDTUtils.toRange(unit, start, search.length());
 	}
 
-	private List<Command> getCommands(CodeActionParams params) {
-		return server.codeAction(params).join().stream().map(Either::getLeft).collect(Collectors.toList());
+	private List<CodeAction> getCodeActions(CodeActionParams params) {
+		return server.codeAction(params).join().stream().map(Either::getRight).collect(Collectors.toList());
 	}
 
 	private Diagnostic getDiagnostic(String code, Range range){

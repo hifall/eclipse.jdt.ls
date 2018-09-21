@@ -10,6 +10,7 @@
  *******************************************************************************/
 package org.eclipse.jdt.ls.core.internal.correction;
 
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 
 import java.util.List;
@@ -21,7 +22,8 @@ import org.eclipse.jdt.core.IPackageFragment;
 import org.eclipse.jdt.core.IPackageFragmentRoot;
 import org.eclipse.jdt.core.JavaCore;
 import org.eclipse.jdt.ls.core.internal.WorkspaceHelper;
-import org.eclipse.lsp4j.Command;
+import org.eclipse.lsp4j.CodeAction;
+import org.eclipse.lsp4j.CodeActionKind;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -49,9 +51,10 @@ public class ConvertVarQuickFixTest extends AbstractQuickFixTest {
 		buf.append("    }\n");
 		buf.append("}\n");
 		ICompilationUnit cu = pack1.createCompilationUnit("Test.java", buf.toString(), false, null);
-		List<Command> commands = evaluateCodeActions(cu);
-		Command command = commands.stream().filter(c -> c.getTitle().matches("Change type of 'name' to 'String'")).findFirst().orElse(null);
-		assertNotNull(command);
+		List<CodeAction> codeActions = evaluateCodeActions(cu);
+		CodeAction codeAction = codeActions.stream().filter(c -> c.getTitle().matches("Change type of 'name' to 'String'")).findFirst().orElse(null);
+		assertNotNull(codeAction);
+		assertEquals(codeAction.getKind(), CodeActionKind.QuickFix);
 	}
 
 	@Test
@@ -65,9 +68,10 @@ public class ConvertVarQuickFixTest extends AbstractQuickFixTest {
 		buf.append("    }\n");
 		buf.append("}\n");
 		ICompilationUnit cu = pack1.createCompilationUnit("Test.java", buf.toString(), false, null);
-		List<Command> commands = evaluateCodeActions(cu);
-		Command command = commands.stream().filter(c -> c.getTitle().matches("Change type of 'name' to 'var'")).findFirst().orElse(null);
-		assertNotNull(command);
+		List<CodeAction> commands = evaluateCodeActions(cu);
+		CodeAction codeAction = commands.stream().filter(c -> c.getTitle().matches("Change type of 'name' to 'var'")).findFirst().orElse(null);
+		assertNotNull(codeAction);
+		assertEquals(codeAction.getKind(), CodeActionKind.QuickFix);
 	}
 
 }

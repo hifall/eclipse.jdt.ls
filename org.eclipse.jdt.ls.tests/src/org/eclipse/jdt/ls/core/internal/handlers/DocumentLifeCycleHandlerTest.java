@@ -45,9 +45,10 @@ import org.eclipse.jdt.ls.core.internal.WorkspaceHelper;
 import org.eclipse.jdt.ls.core.internal.managers.AbstractProjectsManagerBasedTest;
 import org.eclipse.jdt.ls.core.internal.preferences.Preferences;
 import org.eclipse.jdt.ls.core.internal.preferences.Preferences.Severity;
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionContext;
+import org.eclipse.lsp4j.CodeActionKind;
 import org.eclipse.lsp4j.CodeActionParams;
-import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
 import org.eclipse.lsp4j.DidChangeTextDocumentParams;
 import org.eclipse.lsp4j.DidCloseTextDocumentParams;
@@ -116,8 +117,9 @@ public class DocumentLifeCycleHandlerTest extends AbstractProjectsManagerBasedTe
 		ICompilationUnit cu = pack1.createCompilationUnit("F.java", buf.toString(), false, null);
 		openDocument(cu, cu.getSource(), 1);
 
-		List<Command> commands = getCodeActions(cu);
-		assertEquals(commands.size(), 1);
+		List<CodeAction> codeActions = getCodeActions(cu);
+		assertEquals(codeActions.size(), 1);
+		assertEquals(codeActions.get(0).getKind(), CodeActionKind.QuickFix);
 	}
 
 	@Test
@@ -138,11 +140,12 @@ public class DocumentLifeCycleHandlerTest extends AbstractProjectsManagerBasedTe
 		buf.append("}\n");
 		ICompilationUnit cu = pack1.createCompilationUnit("E.java", buf.toString(), false, null);
 
-		List<Command> commands = getCodeActions(cu);
-		assertEquals(commands.size(), 1);
+		List<CodeAction> codeActions = getCodeActions(cu);
+		assertEquals(codeActions.size(), 1);
+		assertEquals(codeActions.get(0).getKind(), CodeActionKind.QuickFix);
 	}
 
-	protected List<Command> getCodeActions(ICompilationUnit cu) throws JavaModelException {
+	protected List<CodeAction> getCodeActions(ICompilationUnit cu) throws JavaModelException {
 
 		CompilationUnit astRoot = CoreASTProvider.getInstance().getAST(cu, CoreASTProvider.WAIT_YES, null);
 		IProblem[] problems = astRoot.getProblems();

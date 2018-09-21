@@ -34,6 +34,7 @@ import org.eclipse.jdt.ls.core.internal.corrections.InnovationContext;
 import org.eclipse.jdt.ls.core.internal.corrections.QuickFixProcessor;
 import org.eclipse.jdt.ls.core.internal.corrections.proposals.CUCorrectionProposal;
 import org.eclipse.jdt.ls.core.internal.text.correction.QuickAssistProcessor;
+import org.eclipse.lsp4j.CodeAction;
 import org.eclipse.lsp4j.CodeActionParams;
 import org.eclipse.lsp4j.Command;
 import org.eclipse.lsp4j.Diagnostic;
@@ -58,7 +59,7 @@ public class CodeActionHandler {
 	 * @param params
 	 * @return
 	 */
-	public List<Command> getCodeActionCommands(CodeActionParams params, IProgressMonitor monitor) {
+	public List<CodeAction> getCodeActionCommands(CodeActionParams params, IProgressMonitor monitor) {
 		final ICompilationUnit unit = JDTUtils.resolveCompilationUnit(params.getTextDocument().getUri());
 		if (unit == null) {
 			return Collections.emptyList();
@@ -69,13 +70,14 @@ public class CodeActionHandler {
 		context.setASTRoot(getASTRoot(unit));
 		IProblemLocationCore[] locations = this.getProblemLocationCores(unit, params.getContext().getDiagnostics());
 
-		List<Command> $ = new ArrayList<>();
+		List<CodeAction> $ = new ArrayList<>();
 		try {
 			CUCorrectionProposal[] corrections = this.quickFixProcessor.getCorrections(context, locations);
 			Arrays.sort(corrections, new CUCorrectionProposalComparator());
 			for (CUCorrectionProposal proposal : corrections) {
-				Command command = this.getCommandFromProposal(proposal);
-				$.add(command);
+				CodeAction codeAction = this.getCodeActionFromProposal(proposal);
+				codeAction.setDiagnostics(params.getContext().getDiagnostics());
+				$.add(codeAction);
 			}
 		} catch (CoreException e) {
 			JavaLanguageServerPlugin.logException("Problem resolving code actions", e);
@@ -85,8 +87,9 @@ public class CodeActionHandler {
 			CUCorrectionProposal[] corrections = this.quickAssistProcessor.getAssists(context, locations);
 			Arrays.sort(corrections, new CUCorrectionProposalComparator());
 			for (CUCorrectionProposal proposal : corrections) {
-				Command command = this.getCommandFromProposal(proposal);
-				$.add(command);
+				CodeAction codeAction = this.getCodeActionFromProposal(proposal);
+				codeAction.setDiagnostics(params.getContext().getDiagnostics());
+				$.add(codeAction);
 			}
 		} catch (CoreException e) {
 			JavaLanguageServerPlugin.logException("Problem resolving code actions", e);
@@ -95,11 +98,14 @@ public class CodeActionHandler {
 		return $;
 	}
 
-	private Command getCommandFromProposal(CUCorrectionProposal proposal) throws CoreException {
+	private CodeAction getCodeActionFromProposal(CUCorrectionProposal proposal) throws CoreException {
 		String name = proposal.getName();
 		ICompilationUnit unit = proposal.getCompilationUnit();
 
-		return new Command(name, COMMAND_ID_APPLY_EDIT, Arrays.asList(convertChangeToWorkspaceEdit(unit, proposal.getChange())));
+		CodeAction codeAction = new CodeAction(name);
+		codeAction.setKind(proposal.getKind());
+		codeAction.setCommand(new Command(name, COMMAND_ID_APPLY_EDIT, Arrays.asList(convertChangeToWorkspaceEdit(unit, proposal.getChange()))));
+		return codeAction;
 	}
 
 	private IProblemLocationCore[] getProblemLocationCores(ICompilationUnit unit, List<Diagnostic> diagnostics) {

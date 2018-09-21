@@ -567,7 +567,7 @@ public class JDTLanguageServer implements LanguageServer, TextDocumentService, W
 		CodeActionHandler handler = new CodeActionHandler();
 		return computeAsync((monitor) -> {
 			waitForLifecycleJobs(monitor);
-			return handler.getCodeActionCommands(params, monitor).stream().map(command -> Either.<Command, CodeAction>forLeft(command)).collect(Collectors.toList());
+			return handler.getCodeActionCommands(params, monitor).stream().map(command -> Either.<Command, CodeAction>forRight(command)).collect(Collectors.toList());
 		});
 	}
 
